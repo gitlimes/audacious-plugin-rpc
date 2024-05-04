@@ -13,7 +13,7 @@
 #include <discord_rpc.h>
 
 #define EXPORT __attribute__((visibility("default")))
-#define APPLICATION_ID "484736379171897344"
+#define APPLICATION_ID "1236402067044831273"
 
 static const char *SETTING_EXTRA_TEXT = "extra_text";
 
@@ -43,6 +43,7 @@ DiscordEventHandlers handlers;
 DiscordRichPresence presence;
 std::string fullTitle;
 std::string playingStatus;
+std::string stateText;
 
 void init_discord() {
     memset(&handlers, 0, sizeof(handlers));
@@ -77,27 +78,34 @@ void title_changed() {
         Tuple tuple = aud_drct_get_tuple();
         String artist = tuple.get_str(Tuple::Artist);
         std::string title(tuple.get_str(Tuple::Title));
+        String album = tuple.get_str(Tuple::Album);
 
         if (artist) {
-            fullTitle = (std::string(artist) + " - " + title).substr(0, 127);
+            fullTitle = (title + " - " + std::string(artist)).substr(0, 127);
         } else {
             fullTitle = title.substr(0, 127);
         }
 
         playingStatus = paused ? "Paused" : "Listening";
 
+        if (album) {
+            stateText = std::string(album).substr(0, 127);
+        } else {
+            stateText = playingStatus;
+        }
+
         presence.details = fullTitle.c_str();
         presence.smallImageKey = paused ? "pause" : "play";
     } else {
-        playingStatus = "Stopped";
+        stateText = "Stopped";
         presence.state = "Stopped";
         presence.smallImageKey = "stop";
     }
 
     std::string extraText(aud_get_str("audacious-plugin-rpc", SETTING_EXTRA_TEXT));
-    playingStatus = (playingStatus + " " + extraText).substr(0, 127);
+    stateText = (stateText + " " + extraText).substr(0, 127);
 
-    presence.state = playingStatus.c_str();
+    presence.state = stateText.c_str();
     update_presence();
 }
 
@@ -106,7 +114,7 @@ void update_title_presence(void*, void*) {
 }
 
 void open_github() {
-   system("xdg-open https://github.com/darktohka/audacious-plugin-rpc");
+   system("xdg-open https://github.com/gitlimes/audacious-plugin-rpc");
 }
 
 bool RPCPlugin::init() {
